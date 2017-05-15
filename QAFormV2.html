@@ -68,11 +68,19 @@ Setup: <input type="text" name="setup"><br>
 Peripherals and Info: <input type = "text" name = "peripherals"><br>
 
 	<h1> Rental Info </h1>
+<div class = "form-group">
 
-Date/Time Needed: <input type ="text" name = "dateNeeded"><br>
-Date/Time Returned: <input type="text" name="dateReturned"><br>                          
+<label class = "control-label" for="dateNeeded"> Date/Time Needed: </label>
+<input class ="form-control" id="dateNeeded" placeholder="MM/DD/YY" type ="text" name = "dateNeeded"><br>
+
+<label class = "control-label" for="dateReturned"> Date/Time Returned: </label>
+<input class ="form-control" id="dateReturned" placeholder="MM/DD/YY" type ="text" name = "dateReturned"><br>
+
+</div>
 Who will pick it up: <input type = "text" name = "pickUpPerson"><br> 
 Location Equipment Will be used: <input type="text" name="location"><br>
+
+
 <input type="submit" >
 
 </form>
@@ -87,13 +95,36 @@ Location Equipment Will be used: <input type="text" name="location"><br>
 
 
 </body>
-<script type="text/javascript">
-    function unhide(divID, otherDivId) {
-    var item = document.getElementById(divID);
-    if (item) {
-            item.className=(item.className=='hidden')?'unhidden':'hidden';
-        }
-        document.getElementById(otherDivId).className = 'hidden';
-    }
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"/>
+
+<script>
+	$(document).ready(function(){
+      var date_input=$('input[name="dateNeeded"]'); //our date input has the name "date"
+      var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+      var options={
+        format: 'mm/dd/yyyy',
+        container: container,
+        todayHighlight: true,
+        autoclose: true,
+      };
+      date_input.datepicker(options);
+
+	var dateReturned=$('input[name="dateReturned"]'); 
+        dateReturned.datepicker(options);
+
+
+
+    })
+
+
+//    function unhide(divID, otherDivId) {
+ //   var item = document.getElementById(divID);
+  //  if (item) {
+   //         item.className=(item.className=='hidden')?'unhidden':'hidden';
+    //    }
+     //   document.getElementById(otherDivId).className = 'hidden';
+   // }
 </script>
 </html>
