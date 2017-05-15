@@ -1,0 +1,99 @@
+<!DOCTYPE html >
+<html>
+<head>
+<title>QA Lab Equipment Request</title> 
+ <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+ <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+  <style>
+    /* Set height of the grid so .sidenav can be 100% (adjust if needed) */
+    hr{ border-color: black; }
+    .titleText{ text-align: center;}
+    .navbar{background-color:#990000;}
+    .navbar-header h1{
+    	font-family: Times;
+    	color:white;
+    }
+  
+    /* Set gray background color and 100% height */
+    .sidenav {
+      background-color: #f1f1f1;
+      height: 100%;
+      text-align: center;
+    }
+  
+    /* Set black background color, white text and some padding */
+    footer {
+      background-color: #555;
+      color: white;
+      padding: 15px;
+    }
+    
+    /* On small screens, set height to 'auto' for sidenav and grid */
+    @media screen and (max-width: 767px) {
+      .sidenav {
+        height: auto;
+        padding: 15px;
+      }
+      .row.content {height: 100%;} 
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <h1> QA Lab Equipment Request</h1>
+    </div>
+  </div>
+</nav>
+ <div class="container">
+      <!-- Example row of columns -->
+      <div class="row">
+	<form action="submit.php" method="post">
+	
+	<h1> Requester Info </h1>
+First Name: <input type="text" name="firstName"><br>
+Last Name: <input type="text" name="lastName"><br>
+Phone: <input type ="text" name = "phone"><br>
+E-mail: <input type="text" name="email"><br>
+
+	<h1> Device Info </h1>
+Device: <input type="text" name="device"><br>
+OS: <input type ="text" name = "os"><br>
+Setup: <input type="text" name="setup"><br>
+Peripherals and Info: <input type = "text" name = "peripherals"><br>
+
+	<h1> Rental Info </h1>
+
+Date/Time Needed: <input type ="text" name = "dateNeeded"><br>
+Date/Time Returned: <input type="text" name="dateReturned"><br>                          
+Who will pick it up: <input type = "text" name = "pickUpPerson"><br> 
+Location Equipment Will be used: <input type="text" name="location"><br>
+<input type="submit" >
+
+</form>
+      </div>
+      </div>
+
+<footer class="container-fluid">
+</footer>
+
+
+
+
+
+</body>
+<script type="text/javascript">
+    function unhide(divID, otherDivId) {
+    var item = document.getElementById(divID);
+    if (item) {
+            item.className=(item.className=='hidden')?'unhidden':'hidden';
+        }
+        document.getElementById(otherDivId).className = 'hidden';
+    }
+</script>
+</html>
