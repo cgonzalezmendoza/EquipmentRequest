@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <body>
 <?php
+date_default_timezone_set("America/Chicago");
 
 //Setting up the database
 $mysqli = new mysqli('localhost','public','publicpassword','equipmentloandb');
@@ -17,7 +18,7 @@ if($mysqli->connect_errno){
 function getId($firstName,$lastName,$mysqli){
 	$stmt = $mysqli->prepare("select id from User where firstName = ? and lastname = ? limit 1");
 	if(!$stmt){
-		printf("Query Prep Failed: %s\n", $mysqli->error);
+		printf("Query Prep for getID Failed: %s\n", $mysqli->error);
 		exit;
 	}
  
@@ -26,11 +27,12 @@ function getId($firstName,$lastName,$mysqli){
 	$stmt->bind_result($id);
 
 	while($stmt->fetch()){	
-	printf("firstname is: %s, lastname is: %s  id is: %s", $firstName, $lastName, $id);
+	//printf("firstname is: %s, lastname is: %s  id is: %s", $firstName, $lastName, $id);
 	$stmt->close();
 	return $id;
+	}
 }
-}
+
 
 $firstName = $_POST['firstName'];
 $lastName = $_POST['lastName'];
@@ -43,7 +45,7 @@ if(is_Null($id)){
 	//Inserting user info into User table if she doesnt exist.
 	$stmt = $mysqli->prepare("insert into User (FirstName,LastName,Email,Phone) values (?, ?, ?, ?)");
 	if(!$stmt){
-		printf("Query Prep Failed: %s\n", $mysqli->error);
+		printf("Query Prep to fetch user Failed: %s\n", $mysqli->error);
 		exit;
 	}
 	$stmt->bind_param('ssss',$firstName,$lastName,$email,$phone);
@@ -52,21 +54,6 @@ if(is_Null($id)){
 	
 	$id = getId($firstName,$lastName,$mysqli);
 }
-
-//Inserting Request into Request table
-$device = $_POST['device'];
-$OS = $_POST['os'];
-$setup = $_POST['setup'];
-$peripherals = $_POST['peripherals'];
- 
-$stmt = $mysqli->prepare("insert into DeviceRequestInfo(Type,OS,Setup,Peripherals)  values (?, ?, ?, ?)");
- if(!$stmt){
-         printf("Query Prep Failed: %s\n", $mysqli->error);
-        exit;
-}
-$stmt->bind_param('ssss',$device,$OS,$setup,$peripherals);
-$stmt->execute();
-$stmt->close();
 
 //Inserting into the Rental Info Table. 
 $dateNeeded = $_POST['dateNeeded'];
@@ -91,22 +78,33 @@ else{
 	$location= $_POST['location'];
 }
  
-$stmt = $mysqli->prepare("insert into Request(checkoutDate,returnDate,user_id,pickupPerson,pickupLocation)  values (?, ?, ?, ?,?)");
+$stmt = $mysqli->prepare("insert into Request(checkoutDate,returnDate,user_id,pickupPerson,pickupLocation,DateGenerated)  values (?, ?, ?, ?, ?,?)");
 if(!$stmt){
-       printf("Query Prep Failed: %s\n", $mysqli->error);
+       printf("Query Prep for Request Failed: %s\n", $mysqli->error);
        exit;
 }
-$stmt->bind_param('ssiss',date("Y-m-d",strtotime($dateNeeded)),date("Y-m-d",strtotime($dateReturned)),$id,$pickUpPerson,$location);
+$stmt->bind_param('ssisss',date("Y-m-d",strtotime($dateNeeded)),date("Y-m-d",strtotime($dateReturned)),$id,$pickUpPerson,$location,date("Y-m-d H:i:s"));
+$stmt->execute();
+$stmt->close();
+
+//Inserting Request into Request table
+$device = $_POST['device'];
+$OS = $_POST['os'];
+$setup = $_POST['setup'];
+$peripherals = $_POST['peripherals'];
+ 
+$stmt = $mysqli->prepare("insert into DeviceRequestInfo(Type,OS,Setup,Peripherals, RequestId)  values (?, ?, ?, ?, ?)");
+ if(!$stmt){
+         printf("Query Prep for DeviceRequestInfo  Failed: %s\n", $mysqli->error);
+        exit;
+}
+$stmt->bind_param('ssssi',$device,$OS,$setup,$peripherals,$id);
 $stmt->execute();
 $stmt->close();
 
 
 
 
-
-
-
-//printf("Your name is: %s", htmlentities($name)); 
 $to = "cgonzalezmendoza@wustl.edu";
 $message = "Hello! This is a simple email message.";
 if(mail("cgonzalezmendoza@wustl.edu","Request Form",$message)){
