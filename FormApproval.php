@@ -1,13 +1,12 @@
 <!DOCTYPE html >
 <html>
 <head>
-<title>QA Lab Equipment Request  Approval </title> 
- <meta charset="utf-8">
+<meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+ <title>QA Lab Equipment Request  Approval </title> 
   <style>
 
 	.margin-buffer{
@@ -70,7 +69,11 @@ div.panel {
     background-color: white;
     display: none;
 } 
-
+.panel {
+    background: #4E9CAF;
+    border-radius: 5px;
+    font-weight: bold;
+}
   </style>
 </head>
 <body>
@@ -160,6 +163,7 @@ function NonNull(&$var){
 	}
 }
 
+
 function getRentalHTML($RequestId, $mysqli){
 	$stmt = $mysqli-> prepare("select checkoutDate,returnDate,pickupPerson,pickupLocation,DateGenerated from Request where id = ?");
 	if(!$stmt){
@@ -195,12 +199,79 @@ foreach ($requestIDArr as $key => $value) {
     //echo "key is: {$key}\n";
 //	print($value[0]);
 	$UserHTML = getUserHTML($value[0], $mysqli);
-	$DeviceHTML = getDevicesHTML($value[1],$mysqli);
+	$DeviceHTML = getDevicesHTML($value[0],$mysqli);
 	$RentalHTML = getRentalHTML($value[1],$mysqli);
 //	$RequestRow .= "<div class = \"row margin-buffer\">".$UserHTML.$DeviceHTML.$RentalHTML."</div>";
-	$RequestRow .= "<button class=\"accordion\">".$UserHTML.$DeviceHTML.$RentalHTML."</button> <div class=\"panel\">
-  <p>Lorem ipsum...</p>
-</div>";
+	$RequestRow .= "<a data-toggle=\"modal\" href=\"#{$value[1]}\" data-target=\"#bannerformmodal\">".$UserHTML.$DeviceHTML.$RentalHTML."</a>
+	<div class=\"modal fade bannerformmodal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"bannerformmodal\" aria-hidden=\"true\" id=\"bannerformmodal\">
+<div class=\"modal-dialog modal-lg\">
+        <div class=\"modal-content\">
+          <div class=\"modal-content\">
+                <div class=\"modal-header\">
+                <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\">&times;</button>
+                <h4 class=\"modal-title\" id=\"myModalLabel\">Contact Form</h4>
+                </div>
+                <div class=\"modal-body\">
+                     <form id=\"requestacallform\" method=\"POST\" name=\"requestacallform\">
+
+                                <div class=\"form-group\">
+                                    <div class=\"input-group\">                               
+                                    <span class=\"input-group-addon\"><i class=\"fa fa-user\"></i></span>
+                                    <input id=\"first_name\" type=\"text\" class=\"form-control\" placeholder=\"First Name\" name=\"first_name\"/>
+                                    </div>
+                              </div>
+                              <div class=\"form-group\">
+                                    <div class=\"input-group\">                               
+                                    <span class=\"input-group-addon\"><i class=\"fa fa-user\"></i></span>
+                                    <input id=\"last_name\" type=\"text\" class=\"form-control\" placeholder=\"Last Name\" name=\"last_name\"/>
+                                    </div>
+                              </div>
+                                <div class=\"form-group\">
+                                    <div class=\"input-group\">                               
+                                    <span class=\"input-group-addon\"><i class=\"fa fa-envelope\"></i></span>
+                                    <input id=\"email1\" type=\"text\" class=\"form-control\" placeholder=\"Email\" name=\"email1\" onchange=\"validateEmailAdd();\"/>
+                                    </div>
+                              </div>
+                              <div class=\"form-group\">
+                                    <div class=\"input-group\">                               
+                                    <span class=\"input-group-addon\"><i class=\"fa fa-group\"></i></span>
+                                    <input id=\"company_name_c\" type=\"text\" class=\"form-control\" placeholder=\"Company Name\" name=\"company_name_c\"/>
+                                    </div>
+                              </div>
+                                <div class=\"form-group\">
+                                    <div class=\"input-group\">                               
+                                    <span class=\"input-group-addon\"><i class=\"fa fa-phone\"></i></span>
+                                    <input id=\"phone_mobile\" type=\"text\" class=\"form-control\" placeholder=\"Mobile\" name=\"phone_mobile\"/>
+                                    </div>
+                              </div>
+                            <div class=\"form-group\">
+                                    <div class=\"input-group\">
+                                        <span class=\"input-group-addon\"><i class=\"fa fa-building-o\"></i></span>
+                                        <select class=\"form-control\" name=\"monthly_rental\" class=\"selectpicker\">
+                                            <option>How many seats do you have available?</option>
+                                            <option>10-50</option>
+                                            <option>50-100</option>
+                                            <option>100-200</option>
+                                            <option>200-500</option>
+                                            <option>500+</option>
+                                        </select>
+                                    </div>
+                            </div>
+                                <div class=\"control-group\">
+                                    <div class=\"controls\">                     
+                                        <textarea id=\"description\" type=\"text\" name=\"description\"  placeholder=\"Description\"></textarea>
+                                    </div>
+                                </div>
+
+                            </form>
+                  </div>
+              <div class=\"modal-footer\">
+                <button type=\"button\" class=\"btn btn-blue\">Submit</button>
+              </div>          
+        </div>
+        </div>
+      </div>
+    </div>";
 
 
 
@@ -266,6 +337,8 @@ foreach ($requestIDArr as $key => $value) {
 	<?php
 		echo $RequestRow ; 
 	?>	
+
+</div>
 <footer class="container-fluid">
 </footer>
 
@@ -294,24 +367,8 @@ foreach ($requestIDArr as $key => $value) {
 
 
     })
-var acc = document.getElementsByClassName("accordion");
-var i;
+ $('.collapse').collapse() 
 
-for (i = 0; i < acc.length; i++) {
-    acc[i].onclick = function(){
-        /* Toggle between adding and removing the "active" class,
-        to highlight the button that controls the panel */
-        this.classList.toggle("active");
-
-        /* Toggle between hiding and showing the active panel */
-        var panel = this.nextElementSibling;
-        if (panel.style.display === "block") {
-            panel.style.display = "none";
-        } else {
-            panel.style.display = "block";
-        }
-    }
-} 
 
 //    function unhide(divID, otherDivId) {
  //   var item = document.getElementById(divID);
