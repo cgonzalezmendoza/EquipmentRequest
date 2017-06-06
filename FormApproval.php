@@ -8,7 +8,9 @@
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
  <title>QA Lab Equipment Request  Approval </title> 
   <style>
-
+html,body{
+	height:100%;
+}
 	.margin-buffer{
 		 margin-top: 20px;
 		margin-bottom: 20px;
@@ -45,24 +47,6 @@
       .row.content {height: 100%;} 
     }
 
-  /* Style the buttons that are used to open and close the accordion panel */
-button.accordion {
-    background-color: #eee;
-    color: #444;
-    cursor: pointer;
-    padding: 18px;
-    width: 100%;
-    text-align: left;
-    border: none;
-    outline: none;
-    transition: 0.4s;
-}
-
-/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
-button.accordion.active, button.accordion:hover {
-    background-color: #ddd;
-}
-
 /* Style the accordion panel. Note: hidden by default */
 div.panel {
     padding: 0 18px;
@@ -79,7 +63,17 @@ div.panel {
 <body>
   <?php
    date_default_timezone_set("America/Chicago");
-   
+  
+//Including the request class:
+require_once('Request.php');
+
+
+//if(isset($_POST['submit'])){
+//	$input = $_POST['firstName'];
+//	echo "Success! you input:" .$input;
+//}
+
+
    //Setting up the database
   $mysqli = new mysqli('localhost','public','publicpassword','equipmentloandb');
   
@@ -104,7 +98,31 @@ div.panel {
 	}
          $stmt->close();
 
-function getUserHTML($UserId, $mysqli){
+	//Creating an aray of all of the available devices.
+	$availableDevices = array();
+	$stmt = $mysqli->prepare("select Type,Model,Name,OS,ID from Device where Available is null");
+         if(!$stmt){
+                 printf("Query Prep to get available deviced failed: %s\n", $mysqli->error);
+                 exit;
+         }
+
+         $stmt->execute();
+         $stmt->bind_result($deviceType, $deviceModel,$deviceName,$deviceOS,$deviceID);
+  
+         while($stmt->fetch()){
+		 $device = new stdClass();
+		 $device->type = $deviceType;
+		 $device->model = $deviceModel;
+		 $device->name = $deviceName;
+		 $device->os = $deviceOS;
+		 $device->id = $deviceID;
+		array_push($availableDevices, $device);	
+	}
+         $stmt->close();
+
+
+
+function getUserHTML($UserId, $mysqli, &$request){
 	
 	$stmt = $mysqli-> prepare("select FirstName, LastName, Email, Phone from User where id = ?");
 	if(!$stmt){
@@ -115,26 +133,27 @@ function getUserHTML($UserId, $mysqli){
 	$stmt->bind_param('i',$UserId);
 	$stmt->execute();
 	$stmt->bind_result($firstName,$lastName,$email,$phone);
-	
+
+
 	while($stmt->fetch()){
 	$UserColumnHTML = "<div class=\"col-md-4\">
 		First Name: {$firstName} <br>
 		Last Name: {$lastName} <br>
 		Email: {$email} <br>
 		Phone: {$phone} <br>
-		</div>";
+		</div>";	
+		$request->setUserInfo($firstName,$lastName,$email,$phone);
 	}
 	$stmt->close();
 	return $UserColumnHTML;
 }
 
-function getDevicesHTML($RequestId,$mysqli){
+function getDevicesHTML($RequestId,$mysqli,&$request){
 	$stmt = $mysqli-> prepare("select Type, OS, Setup, Peripherals from DeviceRequestInfo where RequestId = ?");
 	if(!$stmt){
 		printf("Query to get Request info failed: %s\n", $mysqli->error);
 		exit;
 	}
-//	printf("Device id is: %s\n",$RequestId);
 	$stmt->bind_param('i',$RequestId);
 	$stmt->execute();
 	$stmt->bind_result($type,$os,$setup,$peripherals);
@@ -152,6 +171,8 @@ function getDevicesHTML($RequestId,$mysqli){
 		Setup: {$setup} <br>
 		Peripherals: {$peripherals} <br>
 		</div>";
+		$request->setDevices($type,$os,$setup,$peripherals);
+		
 	}
 	$stmt->close();
 	return $deviceHTML;
@@ -164,7 +185,7 @@ function NonNull(&$var){
 }
 
 
-function getRentalHTML($RequestId, $mysqli){
+function getRentalHTML($RequestId, $mysqli,&$request){
 	$stmt = $mysqli-> prepare("select checkoutDate,returnDate,pickupPerson,pickupLocation,DateGenerated from Request where id = ?");
 	if(!$stmt){
 		printf("Query to get Rental info failed: %s\n", $mysqli->error);
@@ -186,6 +207,7 @@ function getRentalHTML($RequestId, $mysqli){
 		Pickup Location: {$pickupLocation} <br>
 		Date Submitted: {$dateGenerated} <br>
 		</div>";
+		$request->setRentalInfo($checkoutDate,$returnDate,$pickupPerson,$pickupLocation,$dateGenerated);
 	}
 	$stmt->close();
 	return $rentalColumnHTML;
@@ -193,85 +215,147 @@ function getRentalHTML($RequestId, $mysqli){
 
 
 //Building each row of our display:
-
 $RequestRow = "";
+$deviceSelect = "";
+
+foreach($availableDevices as $device){
+	$deviceSelect .= "<option value=\"{$device->id}\" deviceType=\"{$device->type}\" deviceModel=\"{$device->model}\" deviceName=\"{$device->name}\" deviceOS=\"{$device->os}\">{$device->model} </option>";	
+}
+
+
 foreach ($requestIDArr as $key => $value) {
-    //echo "key is: {$key}\n";
-//	print($value[0]);
-	$UserHTML = getUserHTML($value[0], $mysqli);
-	$DeviceHTML = getDevicesHTML($value[0],$mysqli);
-	$RentalHTML = getRentalHTML($value[1],$mysqli);
-//	$RequestRow .= "<div class = \"row margin-buffer\">".$UserHTML.$DeviceHTML.$RentalHTML."</div>";
+	
+	//Creating the Request object to store all of the information about the request.
+	$request = new Request($value[0],$value[1]);
+
+	//Getting all the data and HTML to populate the request rows;
+	$UserHTML = getUserHTML($value[0], $mysqli,$request);
+	$DeviceHTML = getDevicesHTML($value[1],$mysqli,$request);
+	$RentalHTML = getRentalHTML($value[1],$mysqli,$request);
 	$RequestRow .= "<a data-toggle=\"modal\" href=\"#{$value[1]}\" data-target=\"#bannerformmodal\">".$UserHTML.$DeviceHTML.$RentalHTML."</a>
 	<div class=\"modal fade bannerformmodal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"bannerformmodal\" aria-hidden=\"true\" id=\"bannerformmodal\">
-<div class=\"modal-dialog modal-lg\">
-        <div class=\"modal-content\">
-          <div class=\"modal-content\">
-                <div class=\"modal-header\">
-                <button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\">&times;</button>
-                <h4 class=\"modal-title\" id=\"myModalLabel\">Contact Form</h4>
-                </div>
-                <div class=\"modal-body\">
-                     <form id=\"requestacallform\" method=\"POST\" name=\"requestacallform\">
+		<div class=\"modal-dialog modal-lg\">
+          		<div class=\"modal-content\">
+                		<div class=\"modal-header\">
+                			<button type=\"button\" class=\"close\" data-dismiss=\"modal\" aria-hidden=\"true\">&times;</button>
+                			<h2 class=\"modal-title\" id=\"myModalLabel\">Approve Request</h2>
+                		</div>
+                		
+				<div class=\"modal-body\">
+					<form id=\"approve_form\" action = \"\" ajaxtarget=\"approveRequest.php\"class=\"form-horizontal\" method=\"POST\">
+					<div class=\"form-group form-group-sm\">
+						<!-- Left Column -->
+						<div class=\"col-sm-6\">
+							<p class=\"lead\"> Requester Information</p>
 
-                                <div class=\"form-group\">
-                                    <div class=\"input-group\">                               
-                                    <span class=\"input-group-addon\"><i class=\"fa fa-user\"></i></span>
-                                    <input id=\"first_name\" type=\"text\" class=\"form-control\" placeholder=\"First Name\" name=\"first_name\"/>
-                                    </div>
-                              </div>
-                              <div class=\"form-group\">
-                                    <div class=\"input-group\">                               
-                                    <span class=\"input-group-addon\"><i class=\"fa fa-user\"></i></span>
-                                    <input id=\"last_name\" type=\"text\" class=\"form-control\" placeholder=\"Last Name\" name=\"last_name\"/>
-                                    </div>
-                              </div>
-                                <div class=\"form-group\">
-                                    <div class=\"input-group\">                               
-                                    <span class=\"input-group-addon\"><i class=\"fa fa-envelope\"></i></span>
-                                    <input id=\"email1\" type=\"text\" class=\"form-control\" placeholder=\"Email\" name=\"email1\" onchange=\"validateEmailAdd();\"/>
-                                    </div>
-                              </div>
-                              <div class=\"form-group\">
-                                    <div class=\"input-group\">                               
-                                    <span class=\"input-group-addon\"><i class=\"fa fa-group\"></i></span>
-                                    <input id=\"company_name_c\" type=\"text\" class=\"form-control\" placeholder=\"Company Name\" name=\"company_name_c\"/>
-                                    </div>
-                              </div>
-                                <div class=\"form-group\">
-                                    <div class=\"input-group\">                               
-                                    <span class=\"input-group-addon\"><i class=\"fa fa-phone\"></i></span>
-                                    <input id=\"phone_mobile\" type=\"text\" class=\"form-control\" placeholder=\"Mobile\" name=\"phone_mobile\"/>
-                                    </div>
-                              </div>
-                            <div class=\"form-group\">
-                                    <div class=\"input-group\">
-                                        <span class=\"input-group-addon\"><i class=\"fa fa-building-o\"></i></span>
-                                        <select class=\"form-control\" name=\"monthly_rental\" class=\"selectpicker\">
-                                            <option>How many seats do you have available?</option>
-                                            <option>10-50</option>
-                                            <option>50-100</option>
-                                            <option>100-200</option>
-                                            <option>200-500</option>
-                                            <option>500+</option>
-                                        </select>
-                                    </div>
-                            </div>
-                                <div class=\"control-group\">
-                                    <div class=\"controls\">                     
-                                        <textarea id=\"description\" type=\"text\" name=\"description\"  placeholder=\"Description\"></textarea>
-                                    </div>
-                                </div>
+							<div class=\"form-group\">
+								<label for=\"firstName\" class=\"col-sm-3 control-label bg\">First Name</label>
+									<div class=\"col-sm-7\">
+									<input name=\"firstName\" class=\"form-control\" id =\"firstName\" value=\"{$request->firstName}\" type=\"text\">
+									</div>
+							</div>	
+							<div class=\"form-group\">
+								<label for=\"lastName\" class=\"col-sm-3 control-label bg\">Last Name</label>
+									<div class=\"col-sm-7\">
+									<input name=\"lastName\" class=\"form-control\" id =\"lastName\" value=\"{$request->lastName}\" type=\"text\">
+									</div>
+							</div>
+							<div class=\"form-group\">
+								<label for=\"email\" class=\"col-sm-3 control-label bg\">Email</label>
+									<div class=\"col-sm-7\">
+									<input name=\"email\" class=\"form-control\" id =\"email\" value=\"{$request->email}\" type=\"text\">
+									</div>
+							</div>
+							<div class=\"form-group\">
+								<label for=\"phone\" class=\"col-sm-3 control-label bg\">Phone</label>
+									<div class=\"col-sm-7\">
+									<input name=\"phone\" class=\"form-control\" id =\"phone\" value=\"{$request->phone}\" type=\"text\">
+									</div>
+							</div>	
+							<p class=\"lead\"> Rental Information</p>
+							<div class=\"form-group\">
+								<label for=\"checkoutDate\" class=\"col-sm-3 control-label bg\">Checkout Date</label>
+									<div class=\"col-sm-7\">
+										<input name=\"checkoutDate\" class=\"form-control\" id =\"checkoutDate\" value=\"{$request->checkoutDate}\" type=\"text\">
+									</div>
+							</div>	
+							<div class=\"form-group\">
+								<label for=\"returnDate\" class=\"col-sm-3 control-label bg\">Return Date</label>
+									<div class=\"col-sm-7\">
+										<input name=\"returnDate\" class=\"form-control\" id =\"returnDate\" value=\"{$request->returnDate}\" type=\"text\">
+									</div>
+							</div>
+							<div class=\"form-group\">
+								<label for=\"pickupPerson\" class=\"col-sm-3 control-label bg\">Pickup Person</label>
+									<div class=\"col-sm-7\">
+										<input name=\"pickupPerson\" class=\"form-control\" id =\"pickupPerson\" value=\"{$request->pickupPerson}\" type=\"text\">
+									</div>
+							</div>	
+							<div class=\"form-group\">
+								<label for=\"pickupLocation\" class=\"col-sm-3 control-label bg\">Pickup Location</label>
+									<div class=\"col-sm-7\">
+										<input name=\"pickupLocation\" class=\"form-control\" id =\"pickupLocation\" value=\"{$request->pickupLocation}\" type=\"text\">
+									</div>
+							</div>	
+							<div class=\"form-group\">
+								<label for=\"dateGenerated\" class=\"col-sm-3 control-label bg\">Date Generated</label>
+									<div class=\"col-sm-7\">
+										<input name=\"dateGenerated\" class=\"form-control\" id =\"dateGenerated\" value=\"{$request->dateGenerated}\" type=\"text\">
+									</div>
+							</div>	
 
-                            </form>
-                  </div>
-              <div class=\"modal-footer\">
-                <button type=\"button\" class=\"btn btn-blue\">Submit</button>
-              </div>          
-        </div>
-        </div>
-      </div>
-    </div>";
+						</div>
+
+						<!-- Right Column -->
+						<div class=\"col-sm-6\">
+							<p class=\"lead\"> Devices Requested</p>
+							<div class=\"form-group\">
+								<label for=\"type\" class=\"col-sm-3 control-label bg\">Type</label>
+									<div class=\"col-sm-7\">
+										<input name=\"deviceType\" class=\"form-control\" id =\"type\" value=\"{$request->type}\" type=\"text\">
+									</div>
+							</div>	
+							<div class=\"form-group\">
+								<label for=\"os\" class=\"col-sm-3 control-label bg\">OS</label>
+									<div class=\"col-sm-7\">
+										<input name=\"os\" class=\"form-control\" id =\"os\" value=\"{$request->os}\" type=\"text\">
+									</div>
+							</div>
+							<div class=\"form-group\">
+								<label for=\"setup\" class=\"col-sm-3 control-label bg\">Setup</label>
+									<div class=\"col-sm-7\">
+										<input name=\"setup\" class=\"form-control\" id =\"setup\" value=\"{$request->setup}\" type=\"text\">
+									</div>
+							</div>	
+							<div class=\"form-group\">
+								<label for=\"peripherals\" class=\"col-sm-3 control-label bg\">Peripherals</label>
+									<div class=\"col-sm-7\">
+										<input class=\"form-control\" id =\"peripherals\" value=\"{$request->peripherals}\" type=\"text\">
+									</div>
+</div>
+							<p class=\"lead\"> Select Device </p>
+							<div class=\"form-group\">
+								<label for=\"device\" class=\"col-sm-3 control-label bg-danger\">Device</label>
+									<div class=\"col-sm-7\">
+									<select class=\"form-control\" id=\"device\">
+										{$deviceSelect}
+									</select>
+
+									</div>
+							</div>
+							<div id=\"update\"> </div>
+						</div>
+					</div>
+							
+
+							
+                           	<div class=\"modal-footer\">
+              		  		<button type=\"button\" id=\"submitForm\" class=\"btn btn-default\">Submit</button>
+              			</div>          
+        		</div>
+        	</div>
+	</div>
+	</div>";
 
 
 
@@ -339,9 +423,11 @@ foreach ($requestIDArr as $key => $value) {
 	?>	
 
 </div>
+
+<div class="footer navbar-fixed-bottom">
 <footer class="container-fluid">
 </footer>
-
+</div>
 
 
 </body>
@@ -367,15 +453,39 @@ foreach ($requestIDArr as $key => $value) {
 
 
     })
- $('.collapse').collapse() 
+	$('#device').change(function(event) {
+		var option = $('option:selected',this);
+		$('#update').html('<div class="col-sm-3 control-label"> Model: </div>' +
+			'<div class="col-sm-7 control-label ">' + option.attr("deviceModel") +'</div>' +
+			'<div class="col-sm-3 control-label"> Type:  </div>' +
+			'<div class="col-sm-7 control-label ">' + option.attr("deviceType") +'</div>' +
+			'<div class="col-sm-3 control-label"> Name:  </div>' +
+			'<div class="col-sm-7 control-label ">' + option.attr("deviceName") +'</div>' +
+			'<div class="col-sm-3 control-label"> OS:</div>' +
+			'<div class="col-sm-7 control-label ">' + option.attr("deviceOS") +'</div>'		
+			);
+	}); 
 
-
-//    function unhide(divID, otherDivId) {
- //   var item = document.getElementById(divID);
-  //  if (item) {
-   //         item.className=(item.className=='hidden')?'unhidden':'hidden';
-    //    }
-     //   document.getElementById(otherDivId).className = 'hidden';
-   // }
+	$("#approve_form").on("submit", function(e) {
+	        var postData = $(this).serializeArray();
+		var formURL = $(this).attr("ajaxtarget");
+		$.ajax({
+			url: formURL,
+			type: "POST",
+			data: postData,
+			success: function(data, textStatus, jqXHR) {
+				$('#bannerformmodal .modal-header .modal-title').html("Result");
+				$('#bannerformmodal .modal-body').html(data);
+				window.location.reload();
+				},
+				error: function(jqXHR, status, error) {
+					console.log(status + ": " + error);
+					}
+			});
+		e.preventDefault();
+		});
+	$("#submitForm").on('click', function() {
+			$("#approve_form").submit();
+		});
 </script>
 </html>
