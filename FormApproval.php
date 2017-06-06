@@ -338,7 +338,7 @@ foreach ($requestIDArr as $key => $value) {
 							<div class=\"form-group\">
 								<label for=\"device\" class=\"col-sm-3 control-label bg-danger\">Device</label>
 									<div class=\"col-sm-7\">
-									<select class=\"form-control deviceDrop\">
+									<select name=\"device\" class=\"form-control deviceDrop\">
 										{$deviceSelect}
 									</select>
 
@@ -477,10 +477,10 @@ foreach ($requestIDArr as $key => $value) {
 			type: "POST",
 			data: postData,
 			success: function(data, textStatus, jqXHR) {
-				alert("pressed:"+formNumber);
-				$('#bannerformmodal'+formNumber+' .modal-header .modal-title').html("Result");
-				$('#bannerformmodal'+formNumber+' .modal-body').html(data);
-//				window.location.reload();
+				//$('#bannerformmodal'+formNumber+' .modal-header .modal-title').html("Result");
+				//$('#bannerformmodal'+formNumber+' .modal-body').html(data);
+				alert(data);
+				window.location.reload();
 				},
 				error: function(jqXHR, status, error) {
 					console.log(status + ": " + error);

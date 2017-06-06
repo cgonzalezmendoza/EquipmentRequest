@@ -33,11 +33,40 @@ $userId = $_POST["userId"];
  $stmt->close();
 
 //Update Request
+$stmt = $mysqli->prepare("update Request set checkoutDate = ?, returnDate = ?, pickupPerson = ?, pickupLocation = ?, DateGenerated = ? where id = ?");
+ if(!$stmt){
+	        printf("Query Prep for Updating User Failed: %s\n", $mysqli->error);
+		       exit;
+ }
+
+$checkoutDate = $_POST["checkoutDate"];
+$returnDate = $_POST["returnDate"];
+$pickupPerson = $_POST["pickupPerson"];
+$pickupLocation = $_POST["pickupLocation"];
+$dateGenerated = $_POST["dateGenerated"];
+$requestId = $_POST["requestId"];
+
+ $stmt->bind_param('sssssi',$checkoutDate,$returnDate,$pickupPerson,$pickupLocation, $dateGenerated, $requestId);
+ $stmt->execute();
+ $stmt->close();
+
+//Match Device
+$stmt = $mysqli->prepare("update Device set RequestID = ? where ID = ?");
+ if(!$stmt){
+	        printf("Query Prep for Updating User Failed: %s\n", $mysqli->error);
+		       exit;
+ }
+
+$deviceId = $_POST["device"];
+
+ $stmt->bind_param('ii',$requestId,$deviceId);
+ $stmt->execute();
+ $stmt->close();
 
 
 
 
- echo'Request Succesfull for id:'. $userId; 
+ echo'Request Succesfull!'; 
   
  ?>
 
