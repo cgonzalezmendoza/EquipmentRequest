@@ -2,7 +2,7 @@
 
 class Request{
 	var $userId;
-	var $rentalId;
+	var $requestId;
 	var $firstName;
 	var $lastName;
 	var $email;
@@ -17,9 +17,9 @@ class Request{
 	var $pickupLocation;
 	var $dateGenerated;
 
-	function __construct($userId,$rentalId){
+	function __construct($userId,$requestId){
 		$this->userId = $userId;
-		$this->rentalId = $rentalId;
+		$this->requestId = $requestId;
 	}
 
 	function setUserInfo($firstName, $lastName, $email, $phone){
@@ -36,10 +36,11 @@ class Request{
 		$this->peripherals = $peripherals;
 	}
 
-	function setRentalInfo($checkoutDate, $returnDate, $pickupPerson, $pickupLocation, $dateGenerated){
+	function setRequestInfo($checkoutDate, $returnDate, $pickupPerson, $pickupLocation, $dateGenerated){
 		$this->checkoutDate = $checkoutDate;
 		$this->returnDate = $returnDate;
 		$this->pickupPerson = $pickupPerson;
+		$this->pickupLocation = $pickupLocation;
 		$this->dateGenerated = $dateGenerated;
 	}
 

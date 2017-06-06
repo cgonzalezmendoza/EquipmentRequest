@@ -185,10 +185,10 @@ function NonNull(&$var){
 }
 
 
-function getRentalHTML($RequestId, $mysqli,&$request){
+function getRequestHTML($RequestId, $mysqli,&$request){
 	$stmt = $mysqli-> prepare("select checkoutDate,returnDate,pickupPerson,pickupLocation,DateGenerated from Request where id = ?");
 	if(!$stmt){
-		printf("Query to get Rental info failed: %s\n", $mysqli->error);
+		printf("Query to get Request info failed: %s\n", $mysqli->error);
 		exit;
 	}
 
@@ -207,7 +207,7 @@ function getRentalHTML($RequestId, $mysqli,&$request){
 		Pickup Location: {$pickupLocation} <br>
 		Date Submitted: {$dateGenerated} <br>
 		</div>";
-		$request->setRentalInfo($checkoutDate,$returnDate,$pickupPerson,$pickupLocation,$dateGenerated);
+		$request->setRequestInfo($checkoutDate,$returnDate,$pickupPerson,$pickupLocation,$dateGenerated);
 	}
 	$stmt->close();
 	return $rentalColumnHTML;
@@ -227,13 +227,12 @@ foreach ($requestIDArr as $key => $value) {
 	
 	//Creating the Request object to store all of the information about the request.
 	$request = new Request($value[0],$value[1]);
-
 	//Getting all the data and HTML to populate the request rows;
 	$UserHTML = getUserHTML($value[0], $mysqli,$request);
 	$DeviceHTML = getDevicesHTML($value[1],$mysqli,$request);
-	$RentalHTML = getRentalHTML($value[1],$mysqli,$request);
-	$RequestRow .= "<a data-toggle=\"modal\" href=\"#{$value[1]}\" data-target=\"#bannerformmodal\">".$UserHTML.$DeviceHTML.$RentalHTML."</a>
-	<div class=\"modal fade bannerformmodal\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"bannerformmodal\" aria-hidden=\"true\" id=\"bannerformmodal\">
+	$RequestHTML = getRequestHTML($value[1],$mysqli,$request);
+	$RequestRow .= "<a data-toggle=\"modal\" href=\"#{$value[1]}\" data-target=\"#bannerformmodal{$request->requestId}\">".$UserHTML.$DeviceHTML.$RequestHTML."</a>
+	<div class=\"modal fade bannerformmodal{$request->requestId}\" tabindex=\"-1\" role=\"dialog\" aria-labelledby=\"bannerformmodal{$request->requestId}\" aria-hidden=\"true\" id=\"bannerformmodal{$request->requestId}\">
 		<div class=\"modal-dialog modal-lg\">
           		<div class=\"modal-content\">
                 		<div class=\"modal-header\">
@@ -242,11 +241,13 @@ foreach ($requestIDArr as $key => $value) {
                 		</div>
                 		
 				<div class=\"modal-body\">
-					<form id=\"approve_form\" action = \"\" ajaxtarget=\"approveRequest.php\"class=\"form-horizontal\" method=\"POST\">
+					<form formNumber=\"{$request->requestId}\" id=\"approve_form{$request->requestId}\" action = \"\" ajaxtarget=\"approveRequest.php\"class=\"form-horizontal approve_form\" method=\"POST\">
+					<input type=\"hidden\" name=\"userId\"  value=\"{$request->userId}\" id=\"userId\" />
+					<input type=\"hidden\" name=\"requestId\"  value=\"$request->requestId\" id=\"requestId\" />
 					<div class=\"form-group form-group-sm\">
 						<!-- Left Column -->
 						<div class=\"col-sm-6\">
-							<p class=\"lead\"> Requester Information</p>
+							<p class=\"lead\"> User Information</p>
 
 							<div class=\"form-group\">
 								<label for=\"firstName\" class=\"col-sm-3 control-label bg\">First Name</label>
@@ -272,7 +273,7 @@ foreach ($requestIDArr as $key => $value) {
 									<input name=\"phone\" class=\"form-control\" id =\"phone\" value=\"{$request->phone}\" type=\"text\">
 									</div>
 							</div>	
-							<p class=\"lead\"> Rental Information</p>
+							<p class=\"lead\"> Request Information</p>
 							<div class=\"form-group\">
 								<label for=\"checkoutDate\" class=\"col-sm-3 control-label bg\">Checkout Date</label>
 									<div class=\"col-sm-7\">
@@ -337,20 +338,19 @@ foreach ($requestIDArr as $key => $value) {
 							<div class=\"form-group\">
 								<label for=\"device\" class=\"col-sm-3 control-label bg-danger\">Device</label>
 									<div class=\"col-sm-7\">
-									<select class=\"form-control\" id=\"device\">
+									<select class=\"form-control deviceDrop\">
 										{$deviceSelect}
 									</select>
 
 									</div>
 							</div>
-							<div id=\"update\"> </div>
+							<div id=\"update{$request->requestId}\"> </div>
 						</div>
 					</div>
-							
-
+					</form>
 							
                            	<div class=\"modal-footer\">
-              		  		<button type=\"button\" id=\"submitForm\" class=\"btn btn-default\">Submit</button>
+              		  		<button type=\"button\" formNumber=\"{$request->requestId}\" class=\"btn btn-default submitForm\">Submit</button>
               			</div>          
         		</div>
         	</div>
@@ -404,7 +404,7 @@ foreach ($requestIDArr as $key => $value) {
       <div class="row">
 
 	<div class="col-md-4">
-		<h2> Requester Info </h2>
+		<h2> User </h2>
 
 	</div>
 
@@ -413,7 +413,7 @@ foreach ($requestIDArr as $key => $value) {
 	</div>
 
 	<div class="col-md-4">
-		<h2> Rental Information </h2>
+		<h2> Request Information </h2>
 	</div>
 
       </div>
@@ -453,9 +453,10 @@ foreach ($requestIDArr as $key => $value) {
 
 
     })
-	$('#device').change(function(event) {
+	$('.deviceDrop').change(function(event) {
+		var requestId =$(this).parents('form').find('#requestId').val(); 
 		var option = $('option:selected',this);
-		$('#update').html('<div class="col-sm-3 control-label"> Model: </div>' +
+		$('#update'+requestId).html('<div class="col-sm-3 control-label"> Model: </div>' +
 			'<div class="col-sm-7 control-label ">' + option.attr("deviceModel") +'</div>' +
 			'<div class="col-sm-3 control-label"> Type:  </div>' +
 			'<div class="col-sm-7 control-label ">' + option.attr("deviceType") +'</div>' +
@@ -466,17 +467,20 @@ foreach ($requestIDArr as $key => $value) {
 			);
 	}); 
 
-	$("#approve_form").on("submit", function(e) {
+	$(".approve_form").on("submit", function(e) {
 	        var postData = $(this).serializeArray();
 		var formURL = $(this).attr("ajaxtarget");
+		var formNumber = $(this).attr('formNumber'); 
+		
 		$.ajax({
 			url: formURL,
 			type: "POST",
 			data: postData,
 			success: function(data, textStatus, jqXHR) {
-				$('#bannerformmodal .modal-header .modal-title').html("Result");
-				$('#bannerformmodal .modal-body').html(data);
-				window.location.reload();
+				alert("pressed:"+formNumber);
+				$('#bannerformmodal'+formNumber+' .modal-header .modal-title').html("Result");
+				$('#bannerformmodal'+formNumber+' .modal-body').html(data);
+//				window.location.reload();
 				},
 				error: function(jqXHR, status, error) {
 					console.log(status + ": " + error);
@@ -484,8 +488,9 @@ foreach ($requestIDArr as $key => $value) {
 			});
 		e.preventDefault();
 		});
-	$("#submitForm").on('click', function() {
-			$("#approve_form").submit();
+	$(".submitForm").click(function() {		
+			var formNumber = $(this).attr('formNumber'); 
+			$("#approve_form"+formNumber).submit();
 		});
 </script>
 </html>
