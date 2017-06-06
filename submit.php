@@ -16,21 +16,20 @@ if($mysqli->connect_errno){
 
 //Checking if User exists:
 function getId($firstName,$lastName,$mysqli){
-		$stmt = $mysqli->prepare("select id from User where firstName = ? and lastname = ? limit 1");
-			if(!$stmt){
-						printf("Query Prep for getID Failed: %s\n", $mysqli->error);
-								exit;
-									}
+	$stmt = $mysqli->prepare("select id from User where firstName = ? and lastname = ? limit 1");
+		if(!$stmt){
+			printf("Query Prep for getID Failed: %s\n", $mysqli->error);
+			exit;
+		}
 									 
-									 	$stmt->bind_param('ss',$firstName, $lastName);
-											$stmt->execute();
-												$stmt->bind_result($id);
+	$stmt->bind_param('ss',$firstName, $lastName);
+	$stmt->execute();
+	$stmt->bind_result($id);
 
-													while($stmt->fetch()){	
-															//printf("firstname is: %s, lastname is: %s  id is: %s", $firstName, $lastName, $id);
-																$stmt->close();
-																	return $id;
-																		}
+	while($stmt->fetch()){
+		$stmt->close();
+		return $id;
+	}
 }
 
 
@@ -43,17 +42,16 @@ $phone = $_POST['phone'];
 $id = getId($firstName,$lastName,$mysqli);
 if(is_Null($id)){
 		//Inserting user info into User table if she doesnt exist.
-			$stmt = $mysqli->prepare("insert into User (FirstName,LastName,Email,Phone) values (?, ?, ?, ?)");
-				if(!$stmt){
-							printf("Query Prep to fetch user Failed: %s\n", $mysqli->error);
-									exit;
-										}
-											$stmt->bind_param('ssss',$firstName,$lastName,$email,$phone);
-												$stmt->execute();
-													$stmt->close();
-														
-															$id = getId($firstName,$lastName,$mysqli);
-}
+	$stmt = $mysqli->prepare("insert into User (FirstName,LastName,Email,Phone) values (?, ?, ?, ?)");
+	if(!$stmt){
+	printf("Query Prep to fetch user Failed: %s\n", $mysqli->error);
+	exit;
+	}
+	$stmt->bind_param('ssss',$firstName,$lastName,$email,$phone);
+	$stmt->execute();
+	$stmt->close();
+	$id = getId($firstName,$lastName,$mysqli);
+	}
 
 //Inserting into the Rental Info Table. 
 $dateNeeded = $_POST['dateNeeded'];
@@ -65,14 +63,14 @@ $dateReturned = $_POST['dateReturned'];
 
 
 if(empty($_POST['pickUpPerson'])){
-		$pickupPerson = NULL;
+		$pickupPerson =' N/A';
 }
 else{
 		$pickupPerson = $_POST['pickUpPerson'];
 }
 
 if(empty($_POST['location'])){
-		$location = NULL;
+		$location = 'N/A';
 }
 else{
 		$location= $_POST['location'];
@@ -83,7 +81,7 @@ else{
 	        printf("Query Prep for Request Failed: %s\n", $mysqli->error);
 		       exit;
  }
- $stmt->bind_param('ssisss',date("Y-m-d",strtotime($dateNeeded)),date("Y-m-d",strtotime($dateReturned)),$id,$pickUpPerson,$location,date("Y-m-d H:i:s"));
+ $stmt->bind_param('ssisss',date("Y-m-d",strtotime($dateNeeded)),date("Y-m-d",strtotime($dateReturned)),$id,$pickupPerson,$location,date("Y-m-d H:i:s"));
  $stmt->execute();
  $stmt->close();
 
@@ -92,13 +90,13 @@ else{
  $OS = $_POST['os'];
  $setup = $_POST['setup'];
  $peripherals = $_POST['peripherals'];
-  
+ $requestId = $mysqli->insert_id;
   $stmt = $mysqli->prepare("insert into DeviceRequestInfo(Type,OS,Setup,Peripherals, RequestId)  values (?, ?, ?, ?, ?)");
    if(!$stmt){
 	            printf("Query Prep for DeviceRequestInfo  Failed: %s\n", $mysqli->error);
 		            exit;
    }
-   $stmt->bind_param('ssssi',$device,$OS,$setup,$peripherals,$id);
+   $stmt->bind_param('ssssi',$device,$OS,$setup,$peripherals,$requestId);
    $stmt->execute();
    $stmt->close();
 

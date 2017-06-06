@@ -33,7 +33,7 @@ $userId = $_POST["userId"];
  $stmt->close();
 
 //Update Request
-$stmt = $mysqli->prepare("update Request set checkoutDate = ?, returnDate = ?, pickupPerson = ?, pickupLocation = ?, DateGenerated = ? where id = ?");
+$stmt = $mysqli->prepare("update Request set checkoutDate = ?, returnDate = ?, pickupPerson = ?, pickupLocation = ?, DateGenerated = ?, granted = 1 where id = ?");
  if(!$stmt){
 	        printf("Query Prep for Updating User Failed: %s\n", $mysqli->error);
 		       exit;
